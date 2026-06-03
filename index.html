@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unlock — LED Pixel Map Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0f;
+    --surface: #181819;
+    --surface2: #222224;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --accent: #1fc85a;
+    --accent2: #cc00cc;
+    --accent3: #00b89c;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-circle {
+    width: 38px; height: 38px;
+    background: #000;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: .04em;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: .04em;
+    color: var(--text);
+  }
+  header h1 span { color: var(--text2); font-weight: 400; }
+
+  .main {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 73px);
+  }
+
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  .output {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .panel-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  .field input, .field select {
+    height: 38px;
+    padding: 0 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    transition: border-color .15s;
+    width: 100%;
+  }
+
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--border2);
+  }
+
+  .field input[readonly] {
+    color: var(--text2);
+    cursor: default;
+  }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .mods-display {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .mod-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .mod-badge strong { color: var(--text); }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .metric {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .metric .val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .metric .lbl {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .metric.accent .val { color: var(--accent); }
+
+  .toggle-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .toggle-btn {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 11px;
+    font-family: 'Barlow', sans-serif;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text3);
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .toggle-btn.active {
+    background: var(--surface);
+    border-color: var(--border2);
+    color: var(--text);
+  }
+
+  .btn-generate {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn-generate:hover { opacity: .85; }
+  .btn-generate:active { transform: scale(.98); }
+
+  .canvas-wrap {
+    background: #111;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    overflow: hidden;
+    flex: 1;
+  }
+
+  canvas { display: block; image-rendering: pixelated; max-width: 100%; }
+
+  .output-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-dl {
+    flex: 1;
+    padding: 10px;
+    background: var(--surface);
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    cursor: pointer;
+    transition: all .15s;
+    text-transform: uppercase;
+  }
+  .btn-dl:hover { border-color: var(--border2); color: var(--text); }
+
+  .info-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .chip.hi { border-color: rgba(31,200,90,.3); color: var(--accent); }
+
+  .sep { height: 1px; background: var(--border); margin: 4px 0 14px; }
+
+  @media (max-width: 700px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .output { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-circle">UNLOCK</div>
+  <h1>LED Pixel Map <span>Generator</span></h1>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+
+    <!-- Dimensiones -->
+    <div class="panel">
+      <p class="panel-title">Dimensiones físicas</p>
+      <div class="row-2">
+        <div class="field"><label>Ancho (metros)</label><input type="number" id="w_m" value="3" step="0.5" min="0.5"></div>
+        <div class="field"><label>Alto (metros)</label><input type="number" id="h_m" value="2" step="0.5" min="0.5"></div>
+      </div>
+      <div class="sep"></div>
+      <p class="panel-title" style="margin-bottom:8px">Módulos (50×50 cm)</p>
+      <div class="mods-display">
+        <div class="mod-badge">Ancho: <strong id="mods-w">6</strong></div>
+        <div class="mod-badge">Alto: <strong id="mods-h">4</strong></div>
+        <div class="mod-badge">Config: <strong id="mods-size">6×4</strong></div>
+        <div class="mod-badge">Total: <strong id="mods-total">24</strong> mód.</div>
+      </div>
+    </div>
+
+    <!-- Pitch -->
+    <div class="panel">
+      <p class="panel-title">Pixel Pitch</p>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="mode-pitch" onclick="setMode('pitch')">Pitch → Píxeles</button>
+        <button class="toggle-btn" id="mode-pixels" onclick="setMode('pixels')">Píxeles → Pitch</button>
+      </div>
+
+      <div id="section-pitch">
+        <div class="row-2">
+          <div class="field"><label>Pitch (mm)</label><input type="number" id="pitch_mm" value="2.9" step="0.1" min="0.5" max="20"></div>
+          <div class="field"><label>Px por módulo <span style="color:#555;font-size:10px">(editable)</span></label><input type="number" id="px_per_mod" value="168" min="1" step="1"></div>
+        </div>
+      </div>
+
+      <div id="section-pixels" style="display:none">
+        <div class="row-2">
+          <div class="field"><label>Píxeles ancho</label><input type="number" id="px_total_w" value="1008" step="1" min="1"></div>
+          <div class="field"><label>Píxeles alto</label><input type="number" id="px_total_h" value="672" step="1" min="1"></div>
+        </div>
+        <div class="field"><label>Pitch calculado (mm)</label><input type="text" id="pitch_calc" readonly></div>
+      </div>
+
+      <div class="sep"></div>
+      <p class="panel-title" style="margin-bottom:8px">Resolución resultante</p>
+      <div class="metrics">
+        <div class="metric accent"><div class="val" id="res-w">1008</div><div class="lbl">px ancho</div></div>
+        <div class="metric accent"><div class="val" id="res-h">672</div><div class="lbl">px alto</div></div>
+        <div class="metric"><div class="val" id="res-pitch">P2.9</div><div class="lbl">pitch</div></div>
+        <div class="metric"><div class="val" id="res-total">677K</div><div class="lbl">total px</div></div>
+      </div>
+    </div>
+
+    <button class="btn-generate" onclick="generate()">Generar Pixel Map</button>
+  </div>
+
+  <div class="output">
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="mapCanvas"></canvas>
+    </div>
+    <div class="output-actions">
+      <button class="btn-dl" onclick="downloadPNG()">⬇ Descargar PNG</button>
+    </div>
+    <div class="info-chips" id="info-chips"></div>
+  </div>
+</div>
+
+<script>
+let currentMode = 'pitch';
+
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('mode-pitch').classList.toggle('active', m==='pitch');
+  document.getElementById('mode-pixels').classList.toggle('active', m==='pixels');
+  document.getElementById('section-pitch').style.display = m==='pitch' ? '' : 'none';
+  document.getElementById('section-pixels').style.display = m==='pixels' ? '' : 'none';
+  recalc();
+}
+
+function getMods() {
+  const wm = parseFloat(document.getElementById('w_m').value) || 3;
+  const hm = parseFloat(document.getElementById('h_m').value) || 2;
+  return { modsW: Math.round(wm / 0.5), modsH: Math.round(hm / 0.5), wm, hm };
+}
+
+function recalc() {
+  const { modsW, modsH, wm, hm } = getMods();
+  document.getElementById('mods-w').textContent = modsW;
+  document.getElementById('mods-h').textContent = modsH;
+  document.getElementById('mods-total').textContent = modsW * modsH;
+  document.getElementById('mods-size').textContent = modsW + '×' + modsH;
+
+  let totalW, totalH, pitch;
+
+  if (currentMode === 'pitch') {
+    pitch = parseFloat(document.getElementById('pitch_mm').value) || 2.9;
+    const ppm = parseInt(document.getElementById('px_per_mod').value) || Math.round(500 / pitch);
+    totalW = ppm * modsW;
+    totalH = ppm * modsH;
+  } else {
+    totalW = parseInt(document.getElementById('px_total_w').value) || 1008;
+    totalH = parseInt(document.getElementById('px_total_h').value) || 672;
+    pitch = ((wm * 1000 / totalW) + (hm * 1000 / totalH)) / 2;
+    document.getElementById('pitch_calc').value = pitch.toFixed(3) + ' mm';
+  }
+
+  document.getElementById('res-w').textContent = totalW;
+  document.getElementById('res-h').textContent = totalH;
+  document.getElementById('res-pitch').textContent = 'P' + parseFloat(pitch).toFixed(1);
+  const tot = totalW * totalH;
+  document.getElementById('res-total').textContent = tot >= 1000000 ? (tot / 1000000).toFixed(2) + 'M' : Math.round(tot / 1000) + 'K';
+}
+
+function getParams() {
+  const { modsW, modsH, wm, hm } = getMods();
+  let totalW, totalH, pitch;
+  if (currentMode === 'pitch') {
+    pitch = parseFloat(document.getElementById('pitch_mm').value) || 2.9;
+    const ppm = parseInt(document.getElementById('px_per_mod').value) || Math.round(500 / pitch);
+    totalW = ppm * modsW; totalH = ppm * modsH;
+  } else {
+    totalW = parseInt(document.getElementById('px_total_w').value) || 1008;
+    totalH = parseInt(document.getElementById('px_total_h').value) || 672;
+    pitch = ((wm * 1000 / totalW) + (hm * 1000 / totalH)) / 2;
+  }
+  return { modsW, modsH, totalW, totalH, pitch, wm, hm };
+}
+
+// 3-color checkerboard: (row + col*2) % 3
+// guarantees no two adjacent modules share a color
+const PALETTE = ['#1fc85a', '#00b89c', '#cc00cc'];
+
+function drawMap(canvas, p, highRes) {
+  const { modsW, modsH, totalW, totalH, pitch, wm, hm } = p;
+
+  let cW, cH;
+  if (highRes) {
+    // Export at actual pixel resolution (capped at 4000px wide)
+    const scale = Math.min(1, 4000 / totalW);
+    cW = Math.round(totalW * scale);
+    cH = Math.round(totalH * scale);
+  } else {
+    const wrap = document.getElementById('canvas-wrap');
+    const maxW = wrap.clientWidth - 32 || 700;
+    const maxH = Math.max(240, window.innerHeight * 0.55);
+    const ar = totalW / totalH;
+    cW = maxW; cH = Math.round(maxW / ar);
+    if (cH > maxH) { cH = maxH; cW = Math.round(cH * ar); }
+  }
+
+  canvas.width = cW;
+  canvas.height = cH;
+  const ctx = canvas.getContext('2d');
+
+  const modW = cW / modsW;
+  const modH = cH / modsH;
+
+  // Checkerboard fill
+  for (let r = 0; r < modsH; r++) {
+    for (let c = 0; c < modsW; c++) {
+      const x = c * modW, y = r * modH;
+      const ci = (r + c * 2) % 3;
+      ctx.fillStyle = PALETTE[ci];
+      ctx.fillRect(Math.floor(x), Math.floor(y), Math.ceil(modW), Math.ceil(modH));
+    }
+  }
+
+  // Module borders
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+  ctx.lineWidth = Math.max(0.5, cW / 1200);
+  for (let r = 0; r < modsH; r++) {
+    for (let c = 0; c < modsW; c++) {
+      ctx.strokeRect(c * modW, r * modH, modW, modH);
+    }
+  }
+
+  // X diagonals inside each module
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+  ctx.lineWidth = Math.max(0.4, cW / 1600);
+  for (let r = 0; r < modsH; r++) {
+    for (let c = 0; c < modsW; c++) {
+      const x = c * modW, y = r * modH;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + modW, y + modH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + modW, y); ctx.lineTo(x, y + modH); ctx.stroke();
+    }
+  }
+
+  // Dashed rays — exactly toward the 4 corners + 4 cardinal edge midpoints
+  const cx = cW / 2, cy = cH / 2;
+  ctx.save();
+  ctx.setLineDash([Math.max(3, cW / 180), Math.max(4, cW / 140)]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.78)';
+  ctx.lineWidth = Math.max(0.8, cW / 900);
+
+  // Rays to exact corners (diagonal direction per aspect ratio)
+  const corners = [
+    [0, 0], [cW, 0], [cW, cH], [0, cH]
+  ];
+  for (const [tx, ty] of corners) {
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
+  }
+  // Rays to edge midpoints (cardinal)
+  const midpoints = [
+    [cx, 0], [cW, cy], [cx, cH], [0, cy]
+  ];
+  for (const [tx, ty] of midpoints) {
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
+  }
+
+  // Dashed circle
+  const circR = Math.min(cW, cH) * 0.295;
+  ctx.beginPath(); ctx.arc(cx, cy, circR, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+
+  // Black filled circle (logo bg)
+  const logoR = Math.min(cW, cH) * 0.215;
+  ctx.beginPath(); ctx.arc(cx, cy, logoR, 0, Math.PI * 2);
+  ctx.fillStyle = '#000'; ctx.fill();
+
+  // UNLOCK text — fit inside circle with padding
+  // Max text width = logoR * 2 * 0.82 (leaving some margin)
+  const maxTextW = logoR * 2 * 0.82;
+  let fs = Math.max(10, logoR * 0.55);
+  ctx.font = `900 ${fs}px "Arial Black", "Arial Bold", Arial, sans-serif`;
+  // Scale down until it fits
+  while (ctx.measureText('UNLOCK').width > maxTextW && fs > 8) {
+    fs -= 1;
+    ctx.font = `900 ${fs}px "Arial Black", "Arial Bold", Arial, sans-serif`;
+  }
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('UNLOCK', cx, cy);
+
+  // Bottom badge
+  const pitchStr = 'P' + parseFloat(pitch).toFixed(1);
+  const wmStr = Number.isInteger(wm) ? wm : wm.toFixed(1);
+  const hmStr = Number.isInteger(hm) ? hm : hm.toFixed(1);
+  const configLine = `- ${wmStr}X${hmStr}m ${pitchStr} -`;
+  const resLine = `W ${totalW}  X  H ${totalH}`;
+
+  const bW = Math.max(110, Math.min(200, cW * 0.28));
+  const topH = Math.round(cH * 0.038);
+  const botH = Math.round(cH * 0.034);
+  const bH = topH + botH;
+  const bX = cx - bW / 2;
+  const bY = cH - bH - Math.round(cH * 0.015);
+
+  // Top dark pill
+  ctx.fillStyle = 'rgba(15,15,15,0.9)';
+  roundRect(ctx, bX, bY, bW, topH, [5, 5, 0, 0]); ctx.fill();
+  // Bottom grey bar
+  ctx.fillStyle = 'rgba(170,170,170,0.88)';
+  roundRect(ctx, bX, bY + topH, bW, botH, [0, 0, 5, 5]); ctx.fill();
+
+  const fsB = Math.max(8, Math.min(13, bW * 0.083));
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `bold ${fsB}px Arial`;
+  ctx.fillStyle = '#fff';
+  ctx.fillText(configLine, cx, bY + topH / 2);
+  ctx.fillStyle = '#111';
+  ctx.fillText(resLine, cx, bY + topH + botH / 2);
+}
+
+function roundRect(ctx, x, y, w, h, radii) {
+  const [tl, tr, br, bl] = Array.isArray(radii) ? radii : [radii, radii, radii, radii];
+  ctx.beginPath();
+  ctx.moveTo(x + tl, y);
+  ctx.lineTo(x + w - tr, y); ctx.quadraticCurveTo(x + w, y, x + w, y + tr);
+  ctx.lineTo(x + w, y + h - br); ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
+  ctx.lineTo(x + bl, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - bl);
+  ctx.lineTo(x, y + tl); ctx.quadraticCurveTo(x, y, x + tl, y);
+  ctx.closePath();
+}
+
+function generate() {
+  const p = getParams();
+  const canvas = document.getElementById('mapCanvas');
+  drawMap(canvas, p, false);
+
+  const { modsW, modsH, totalW, totalH, pitch, wm, hm } = p;
+  const pitchStr = 'P' + parseFloat(pitch).toFixed(1);
+  const tot = totalW * totalH;
+  const totStr = tot >= 1000000 ? (tot / 1000000).toFixed(2) + 'M' : Math.round(tot / 1000) + 'K';
+  document.getElementById('info-chips').innerHTML =
+    `<span class="chip hi">${modsW}×${modsH} módulos</span>` +
+    `<span class="chip hi">${totalW}×${totalH} px</span>` +
+    `<span class="chip">${pitchStr}</span>` +
+    `<span class="chip">${wm}m × ${hm}m</span>` +
+    `<span class="chip">${totStr} píxeles</span>`;
+}
+
+function downloadPNG() {
+  const p = getParams();
+  const offscreen = document.createElement('canvas');
+  drawMap(offscreen, p, true);
+  const { modsW, modsH, totalW, totalH, pitch } = p;
+  const a = document.createElement('a');
+  a.download = `pixelmap_${modsW}x${modsH}_${totalW}x${totalH}_P${parseFloat(pitch).toFixed(1)}.png`;
+  a.href = offscreen.toDataURL('image/png');
+  a.click();
+}
+
+// Live recalc on input
+['w_m','h_m','pitch_mm','px_per_mod','px_total_w','px_total_h'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => { recalc(); generate(); });
+});
+
+recalc();
+generate();
+</script>
+</body>
+</html>
